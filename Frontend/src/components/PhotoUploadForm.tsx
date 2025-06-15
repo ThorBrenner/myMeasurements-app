@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,22 +31,41 @@ export const PhotoUploadForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!frontPhoto || !sidePhoto) {
       toast.error("Please upload both front and side photos");
       return;
     }
 
     setIsUploading(true);
-    
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    toast.success("Photos processed successfully! Redirecting to dashboard...");
-    
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 1000);
+
+    const formData = new FormData();
+    formData.append('front', frontPhoto);
+    formData.append('side', sidePhoto);
+
+    try {
+      const response = await fetch('http://localhost:3000/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Upload failed");
+      }
+
+      const data = await response.json();
+
+      toast.success("Photos processed successfully! Redirecting...");
+
+      setTimeout(() => {
+        navigate('/dashboard', { state: { measurements: data.measurements } });
+      }, 1000);
+    } catch (error: any) {
+      toast.error(`Upload failed: ${error.message}`);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -57,9 +75,7 @@ export const PhotoUploadForm = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Front Photo</CardTitle>
-            <CardDescription>
-              Upload a front-facing photo of your full body
-            </CardDescription>
+            <CardDescription>Upload a front-facing photo of your full body</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -96,9 +112,7 @@ export const PhotoUploadForm = () => {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Side Photo</CardTitle>
-            <CardDescription>
-              Upload a side-facing photo of your full body
-            </CardDescription>
+            <CardDescription>Upload a side-facing photo of your full body</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

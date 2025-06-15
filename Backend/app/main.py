@@ -5,6 +5,10 @@ import uvicorn
 import os
 from typing import Optional
 import logging
+from io import BytesIO
+from PIL import Image
+import numpy as np
+import torch
 
 from .services.prediction_service import PredictionService
 from .services.image_service import ImageService
@@ -72,30 +76,30 @@ async def predict_measurements(
         # Validate input
         if not image.content_type.startswith('image/'):
             raise HTTPException(status_code=400, detail="Arquivo deve ser uma imagem")
-        
+
         if height <= 0 or height > 300:
             raise HTTPException(status_code=400, detail="Altura deve estar entre 1 e 300 cm")
-        
+
         if weight <= 0 or weight > 500:
             raise HTTPException(status_code=400, detail="Peso deve estar entre 1 e 500 kg")
 
         # Read image
         image_data = await image.read()
-        
+
         # Process image (segmentation)
         processed_image = await image_service.process_image(image_data)
-        
+
         # Make prediction
         measurements = await prediction_service.predict(
             processed_image, height, weight
         )
-        
+
         return PredictionResponse(
             success=True,
             measurements=measurements,
             message="Predição realizada com sucesso"
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -104,6 +108,44 @@ async def predict_measurements(
             status_code=500, 
             detail=f"Erro interno do servidor: {str(e)}"
         )
+
+@app.post("/predict-multi")
+async def predict_with_two_images(
+    front: UploadFile = File(...),
+    side: UploadFile = File(...),
+    height: float = Form(...),
+    weight: float = Form(...)
+):
+    """
+    Predição com duas imagens (frontal e lateral)
+    """
+    try:
+        # Read and process both images
+        front_data = await front.read()
+        side_data = await side.read()
+
+        front_image = await image_service.process_image(front_data)
+        side_image = await image_service.process_image(side_data)
+
+        # Combina as imagens lado a lado (assumindo [C, H, W] torch.Tensor)
+        if front_image.shape[1:] != side_image.shape[1:]:
+            raise HTTPException(status_code=400, detail="As imagens devem ter a mesma altura e largura")
+
+        combined_image = np.concatenate((front_image.numpy(), side_image.numpy()), axis=2)  # Concatena na largura
+        combined_tensor = torch.tensor(combined_image)
+
+        measurements = await prediction_service.predict(
+            combined_tensor, height, weight
+        )
+
+        return {
+            "success": True,
+            "measurements": measurements,
+            "message": "Predição com duas imagens realizada com sucesso"
+        }
+    except Exception as e:
+        logger.error(f"Erro na predição com duas imagens: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/segment")
 async def segment_image(
@@ -115,16 +157,16 @@ async def segment_image(
     try:
         if not image.content_type.startswith('image/'):
             raise HTTPException(status_code=400, detail="Arquivo deve ser uma imagem")
-        
+
         image_data = await image.read()
         processed_image = await image_service.process_image(image_data)
-        
+
         return {
             "success": True,
             "message": "Imagem segmentada com sucesso",
             "image_shape": processed_image.shape if hasattr(processed_image, 'shape') else None
         }
-        
+
     except Exception as e:
         logger.error(f"Error in segmentation: {e}")
         raise HTTPException(
