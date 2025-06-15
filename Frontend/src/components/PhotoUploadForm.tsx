@@ -3,15 +3,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, Image as ImageIcon, User } from "lucide-react";
+import { Upload, Image as ImageIcon, User, Scale, Ruler, Calendar, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+
+interface UserDetails {
+  gender: string;
+  height: string;
+  weight: string;
+  age: string;
+}
 
 export const PhotoUploadForm = () => {
   const [frontPhoto, setFrontPhoto] = useState<File | null>(null);
   const [sidePhoto, setSidePhoto] = useState<File | null>(null);
+  const [userDetails, setUserDetails] = useState<UserDetails>({
+    gender: '',
+    height: '',
+    weight: '',
+    age: ''
+  });
   const [isUploading, setIsUploading] = useState(false);
-  const navigate = useNavigate();
+  const [errors, setErrors] = useState<Partial<UserDetails>>({});
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'side') => {
     const file = event.target.files?.[0];
@@ -22,18 +35,52 @@ export const PhotoUploadForm = () => {
         } else {
           setSidePhoto(file);
         }
-        toast.success(`${type === 'front' ? 'Front' : 'Side'} photo uploaded successfully!`);
       } else {
-        toast.error("Please upload a valid image file");
+        alert("Please upload a valid image file");
       }
     }
+  };
+
+  const handleInputChange = (field: keyof UserDetails, value: string) => {
+    setUserDetails(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const newErrors: Partial<UserDetails> = {};
+
+    if (!userDetails.gender) newErrors.gender = 'Gender is required';
+    if (!userDetails.height) newErrors.height = 'Height is required';
+    if (!userDetails.weight) newErrors.weight = 'Weight is required';
+    if (!userDetails.age) newErrors.age = 'Age is required';
+
+    // Validate numeric fields
+    if (userDetails.height && (isNaN(Number(userDetails.height)) || Number(userDetails.height) <= 0)) {
+      newErrors.height = 'Please enter a valid height';
+    }
+    if (userDetails.weight && (isNaN(Number(userDetails.weight)) || Number(userDetails.weight) <= 0)) {
+      newErrors.weight = 'Please enter a valid weight';
+    }
+    if (userDetails.age && (isNaN(Number(userDetails.age)) || Number(userDetails.age) <= 0 || Number(userDetails.age) > 120)) {
+      newErrors.age = 'Please enter a valid age (1-120)';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!frontPhoto || !sidePhoto) {
-      toast.error("Please upload both front and side photos");
+      alert("Please upload both front and side photos");
+      return;
+    }
+
+    if (!validateForm()) {
       return;
     }
 
@@ -42,6 +89,10 @@ export const PhotoUploadForm = () => {
     const formData = new FormData();
     formData.append('front', frontPhoto);
     formData.append('side', sidePhoto);
+    formData.append('gender', userDetails.gender);
+    formData.append('height', userDetails.height);
+    formData.append('weight', userDetails.weight);
+    formData.append('age', userDetails.age);
 
     try {
       const response = await fetch('http://localhost:3000/api/upload', {
@@ -55,118 +106,254 @@ export const PhotoUploadForm = () => {
       }
 
       const data = await response.json();
+      alert("Photos processed successfully! Redirecting...");
 
-      toast.success("Photos processed successfully! Redirecting...");
-
-      setTimeout(() => {
-        navigate('/dashboard', { state: { measurements: data.measurements } });
-      }, 1000);
+      // In a real app, you'd use react-router here
+      // navigate('/dashboard', { state: { measurements: data.measurements } });
     } catch (error: any) {
-      toast.error(`Upload failed: ${error.message}`);
+      alert(`Upload failed: ${error.message}`);
     } finally {
       setIsUploading(false);
     }
   };
 
+  const isFormValid = frontPhoto && sidePhoto && userDetails.gender && userDetails.height && userDetails.weight && userDetails.age;
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Front Photo Upload */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Front Photo</CardTitle>
-            <CardDescription>Upload a front-facing photo of your full body</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Label htmlFor="front-photo">Front Body Photo</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors">
-                {frontPhoto ? (
-                  <div className="space-y-2">
-                    <ImageIcon className="h-8 w-8 text-green-600 mx-auto" />
-                    <p className="text-sm font-medium text-green-600">{frontPhoto.name}</p>
-                    <p className="text-xs text-gray-500">
-                      Size: {(frontPhoto.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Upload className="h-8 w-8 text-gray-400 mx-auto" />
-                    <p className="text-sm text-gray-600">Click to upload front photo</p>
-                    <p className="text-xs text-gray-400">PNG, JPG up to 10MB</p>
-                  </div>
-                )}
-                <Input
-                  id="front-photo"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileChange(e, 'front')}
-                  className="mt-2"
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
+            <User className="h-8 w-8 text-indigo-600" />
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Body Analysis</h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Upload your photos and provide your details for accurate body measurements and analysis
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-8">
+          {/* User Details Section */}
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <div className="flex items-center mb-6">
+              <Users className="h-6 w-6 text-indigo-600 mr-3" />
+              <h2 className="text-2xl font-semibold text-gray-900">Personal Information</h2>
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Gender */}
+              <div className="space-y-2">
+                <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
+                  Gender
+                </label>
+                <select
+                  id="gender"
+                  value={userDetails.gender}
+                  onChange={(e) => handleInputChange('gender', e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
+                    errors.gender ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+                {errors.gender && <p className="text-sm text-red-600">{errors.gender}</p>}
+              </div>
+
+              {/* Height */}
+              <div className="space-y-2">
+                <label htmlFor="height" className="block text-sm font-medium text-gray-700">
+                  <Ruler className="inline h-4 w-4 mr-1" />
+                  Height (cm)
+                </label>
+                <input
+                  type="number"
+                  id="height"
+                  value={userDetails.height}
+                  onChange={(e) => handleInputChange('height', e.target.value)}
+                  placeholder="170"
+                  min="1"
+                  max="300"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
+                    errors.height ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
                 />
+                {errors.height && <p className="text-sm text-red-600">{errors.height}</p>}
+              </div>
+
+              {/* Weight */}
+              <div className="space-y-2">
+                <label htmlFor="weight" className="block text-sm font-medium text-gray-700">
+                  <Scale className="inline h-4 w-4 mr-1" />
+                  Weight (kg)
+                </label>
+                <input
+                  type="number"
+                  id="weight"
+                  value={userDetails.weight}
+                  onChange={(e) => handleInputChange('weight', e.target.value)}
+                  placeholder="70"
+                  min="1"
+                  max="500"
+                  step="0.1"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
+                    errors.weight ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {errors.weight && <p className="text-sm text-red-600">{errors.weight}</p>}
+              </div>
+
+              {/* Age */}
+              <div className="space-y-2">
+                <label htmlFor="age" className="block text-sm font-medium text-gray-700">
+                  <Calendar className="inline h-4 w-4 mr-1" />
+                  Age (years)
+                </label>
+                <input
+                  type="number"
+                  id="age"
+                  value={userDetails.age}
+                  onChange={(e) => handleInputChange('age', e.target.value)}
+                  placeholder="25"
+                  min="1"
+                  max="120"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
+                    errors.age ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {errors.age && <p className="text-sm text-red-600">{errors.age}</p>}
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Side Photo Upload */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Side Photo</CardTitle>
-            <CardDescription>Upload a side-facing photo of your full body</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Label htmlFor="side-photo">Side Body Photo</Label>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors">
-                {sidePhoto ? (
-                  <div className="space-y-2">
-                    <ImageIcon className="h-8 w-8 text-green-600 mx-auto" />
-                    <p className="text-sm font-medium text-green-600">{sidePhoto.name}</p>
-                    <p className="text-xs text-gray-500">
-                      Size: {(sidePhoto.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
+          {/* Photo Upload Section */}
+          <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+            <div className="flex items-center mb-6">
+              <ImageIcon className="h-6 w-6 text-indigo-600 mr-3" />
+              <h2 className="text-2xl font-semibold text-gray-900">Photo Upload</h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Front Photo Upload */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Front Photo</h3>
+                <p className="text-sm text-gray-600 mb-4">Upload a front-facing photo of your full body</p>
+                
+                <div className="relative">
+                  <input
+                    id="front-photo"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileChange(e, 'front')}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
+                    frontPhoto 
+                      ? 'border-green-300 bg-green-50' 
+                      : 'border-gray-300 hover:border-indigo-400 hover:bg-indigo-50'
+                  }`}>
+                    {frontPhoto ? (
+                      <div className="space-y-3">
+                        <ImageIcon className="h-12 w-12 text-green-600 mx-auto" />
+                        <div>
+                          <p className="font-medium text-green-700">{frontPhoto.name}</p>
+                          <p className="text-sm text-green-600">
+                            {(frontPhoto.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                        <p className="text-sm text-green-600">✓ Front photo uploaded</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <Upload className="h-12 w-12 text-gray-400 mx-auto" />
+                        <div>
+                          <p className="text-lg font-medium text-gray-700">Click to upload front photo</p>
+                          <p className="text-sm text-gray-500">PNG, JPG up to 10MB</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    <Upload className="h-8 w-8 text-gray-400 mx-auto" />
-                    <p className="text-sm text-gray-600">Click to upload side photo</p>
-                    <p className="text-xs text-gray-400">PNG, JPG up to 10MB</p>
+                </div>
+              </div>
+
+              {/* Side Photo Upload */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium text-gray-900">Side Photo</h3>
+                <p className="text-sm text-gray-600 mb-4">Upload a side-facing photo of your full body</p>
+                
+                <div className="relative">
+                  <input
+                    id="side-photo"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleFileChange(e, 'side')}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${
+                    sidePhoto 
+                      ? 'border-green-300 bg-green-50' 
+                      : 'border-gray-300 hover:border-indigo-400 hover:bg-indigo-50'
+                  }`}>
+                    {sidePhoto ? (
+                      <div className="space-y-3">
+                        <ImageIcon className="h-12 w-12 text-green-600 mx-auto" />
+                        <div>
+                          <p className="font-medium text-green-700">{sidePhoto.name}</p>
+                          <p className="text-sm text-green-600">
+                            {(sidePhoto.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        </div>
+                        <p className="text-sm text-green-600">✓ Side photo uploaded</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <Upload className="h-12 w-12 text-gray-400 mx-auto" />
+                        <div>
+                          <p className="text-lg font-medium text-gray-700">Click to upload side photo</p>
+                          <p className="text-sm text-gray-500">PNG, JPG up to 10MB</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-                <Input
-                  id="side-photo"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileChange(e, 'side')}
-                  className="mt-2"
-                />
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
 
-      {/* Submit Button */}
-      <div className="text-center">
-        <Button
-          type="submit"
-          size="lg"
-          disabled={!frontPhoto || !sidePhoto || isUploading}
-          className="bg-indigo-600 hover:bg-indigo-700 px-8 py-3"
-        >
-          {isUploading ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Processing Photos...
-            </>
-          ) : (
-            <>
-              <User className="mr-2 h-4 w-4" />
-              Analyze My Body
-            </>
-          )}
-        </Button>
+          {/* Submit Button */}
+          <div className="text-center">
+            <button
+              type="submit"
+              disabled={!isFormValid || isUploading}
+              className={`inline-flex items-center px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-200 ${
+                isFormValid && !isUploading
+                  ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {isUploading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                  Processing Your Analysis...
+                </>
+              ) : (
+                <>
+                  <User className="mr-3 h-5 w-5" />
+                  Analyze My Body
+                </>
+              )}
+            </button>
+            
+            {!isFormValid && (
+              <p className="mt-3 text-sm text-gray-500">
+                Please complete all fields and upload both photos to continue
+              </p>
+            )}
+          </div>
+        </form>
       </div>
-    </form>
+    </div>
   );
 };
