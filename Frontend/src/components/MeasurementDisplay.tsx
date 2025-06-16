@@ -1,19 +1,40 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
-export const MeasurementDisplay = () => {
-  // Mock measurement data - in real app this would come from API
-  const measurements = [
-    { label: "Height", value: "175.2", unit: "cm", accuracy: "high" },
-    { label: "Chest", value: "96.5", unit: "cm", accuracy: "high" },
-    { label: "Waist", value: "82.1", unit: "cm", accuracy: "high" },
-    { label: "Hips", value: "94.3", unit: "cm", accuracy: "medium" },
-    { label: "Shoulder Width", value: "44.7", unit: "cm", accuracy: "high" },
-    { label: "Arm Length", value: "58.2", unit: "cm", accuracy: "medium" },
-    { label: "Leg Length", value: "87.5", unit: "cm", accuracy: "high" },
-    { label: "Neck", value: "37.8", unit: "cm", accuracy: "medium" },
-  ];
+interface MeasurementDisplayProps {
+  measurements: Record<string, number>;
+}
+
+interface MeasurementItem {
+  label: string;
+  value: string;
+  unit: string;
+  accuracy: string;
+}
+
+export const MeasurementDisplay = ({ measurements }: MeasurementDisplayProps) => {
+  const rawMeasurements = measurements;
+
+  const mapLabel = (key: string) => {
+    const labelMap: Record<string, string> = {
+      height: "Height",
+      chest: "Chest",
+      waist: "Waist",
+      hip: "Hips",
+      "shoulder-breadth": "Shoulder Width",
+      "arm-length": "Arm Length",
+      "leg-length": "Leg Length",
+      neck: "Neck",
+      bicep: "Bicep",
+      calf: "Calf",
+      thigh: "Thigh",
+      wrist: "Wrist",
+      ankle: "Ankle",
+      forearm: "Forearm",
+      "shoulder-to-crotch": "Shoulder to Crotch"
+    };
+    return labelMap[key] || key;
+  };
 
   const getAccuracyColor = (accuracy: string) => {
     switch (accuracy) {
@@ -41,6 +62,13 @@ export const MeasurementDisplay = () => {
     }
   };
 
+  const measurementsList: MeasurementItem[] = Object.entries(rawMeasurements).map(([key, value]) => ({
+    label: mapLabel(key),
+    value: String(value),
+    unit: "cm",
+    accuracy: "high" // Placeholder accuracy until you implement real logic
+  }));
+
   return (
     <Card>
       <CardHeader>
@@ -51,7 +79,7 @@ export const MeasurementDisplay = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {measurements.map((measurement, index) => (
+          {measurementsList.map((measurement, index) => (
             <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">

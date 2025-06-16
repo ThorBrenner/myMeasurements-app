@@ -7,6 +7,7 @@ import { Upload, Image as ImageIcon, User, Scale, Ruler, Calendar, Users } from 
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+
 interface UserDetails {
   gender: string;
   height: string;
@@ -15,6 +16,7 @@ interface UserDetails {
 }
 
 export const PhotoUploadForm = () => {
+  const navigate = useNavigate();
   const [frontPhoto, setFrontPhoto] = useState<File | null>(null);
   const [sidePhoto, setSidePhoto] = useState<File | null>(null);
   const [userDetails, setUserDetails] = useState<UserDetails>({
@@ -95,7 +97,7 @@ export const PhotoUploadForm = () => {
     formData.append('age', userDetails.age);
 
     try {
-      const response = await fetch('http://localhost:3000/api/upload', {
+      const response = await fetch('http://localhost:8000/predict-multi', {
         method: 'POST',
         body: formData,
       });
@@ -106,10 +108,9 @@ export const PhotoUploadForm = () => {
       }
 
       const data = await response.json();
-      alert("Photos processed successfully! Redirecting...");
 
-      // In a real app, you'd use react-router here
-      // navigate('/dashboard', { state: { measurements: data.measurements } });
+      navigate('/dashboard', { state: { measurements: data.measurements } });
+
     } catch (error: any) {
       alert(`Upload failed: ${error.message}`);
     } finally {

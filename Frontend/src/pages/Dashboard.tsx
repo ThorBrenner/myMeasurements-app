@@ -1,12 +1,14 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { User, ArrowLeft, Download, Share } from "lucide-react";
 import { MeasurementDisplay } from "@/components/MeasurementDisplay";
 import { BodyViewer3D } from "@/components/BodyViewer3D";
 
 const Dashboard = () => {
+  const { state } = useLocation();
+  const measurements = state?.measurements;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -54,7 +56,11 @@ const Dashboard = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Measurements Panel */}
           <div className="lg:col-span-1">
-            <MeasurementDisplay />
+            {measurements ? (
+              <MeasurementDisplay measurements={measurements} />
+            ) : (
+              <p className="text-gray-500">No measurements available. Please upload photos.</p>
+            )}
           </div>
 
           {/* 3D Viewer Panel */}

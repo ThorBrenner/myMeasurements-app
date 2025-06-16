@@ -9,6 +9,7 @@ import Upload from "./pages/Upload";
 import Dashboard from "./pages/Dashboard";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
+import { MeasurementDisplay } from "./components/MeasurementDisplay";
 
 const queryClient = new QueryClient();
 
