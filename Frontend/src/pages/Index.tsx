@@ -21,7 +21,7 @@ const Index = () => {
               <Link to="/dashboard" className="text-gray-700 hover:text-indigo-600 transition-colors">Dashboard</Link>
               <Link to="/privacy" className="text-gray-700 hover:text-indigo-600 transition-colors">Privacy</Link>
             </div>
-            <Link to="/upload">
+            <Link to="/login">
               <Button className="bg-indigo-600 hover:bg-indigo-700">Get Started</Button>
             </Link>
           </div>

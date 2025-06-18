@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Dict, Optional
+from pydantic import BaseModel, EmailStr
 
 class PredictionResponse(BaseModel):
     """Response model for predictions"""
@@ -19,3 +20,21 @@ class HealthResponse(BaseModel):
     status: str
     model_loaded: bool
     version: str
+
+class UserBase(BaseModel):
+    email: EmailStr
+    name: str
+
+class UserCreate(UserBase):
+    password: str
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class UserInDB(UserBase):
+    id: str
+    hashed_password: str
+
+class UserResponse(UserBase):
+    id: str

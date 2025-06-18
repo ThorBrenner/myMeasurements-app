@@ -15,6 +15,9 @@ from .services.image_service import ImageService
 from .models.schemas import PredictionResponse, ErrorResponse
 from .core.config import settings
 
+from app.routers import auth
+from app.models.database import Base, engine
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,6 +28,8 @@ app = FastAPI(
     description="API para predição de medidas corporais usando machine learning",
     version="1.0.0"
 )
+
+app.include_router(auth.router)
 
 # Configure CORS
 app.add_middleware(
