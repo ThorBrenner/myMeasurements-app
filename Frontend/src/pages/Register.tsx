@@ -71,10 +71,10 @@ export default function Register() {
     const success = await register(formData.email, formData.password, formData.name);
 
     if (success) {
-      toast.success('Account created successfully!');
-      navigate('/dashboard');
+      toast.success("Account created successfully!");
+      navigate("/");
     } else {
-      toast.error('This email is already in use');
+      toast.error("This email is already in use");
     }
   };
 
@@ -223,3 +223,5 @@ export default function Register() {
     </div>
   );
 }
+
+

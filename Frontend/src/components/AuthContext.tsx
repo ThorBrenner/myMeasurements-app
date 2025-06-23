@@ -8,6 +8,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => void;
@@ -24,6 +25,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const isAuthenticated = !!user;
+
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
@@ -34,46 +37,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-  setIsLoading(true);
-  try {
-    const res = await fetch('http://localhost:8000/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-      signal: AbortSignal.timeout(5000) // Timeout de 5 segundos
-    });
+    setIsLoading(true);
+    try {
+      const res = await fetch("http://localhost:8000/auth/login", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        signal: AbortSignal.timeout(5000)
+      });
 
-    console.log('Login response:', res); // Adicione este log
+      console.log('Login response:', res); 
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      console.error('Login failed:', errorData);
-      throw new Error(errorData.message || 'Invalid credentials');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Login failed:', errorData);
+        throw new Error(errorData.message || 'Invalid credentials');
+      }
+
+      const data = await res.json();
+      console.log("Login success:", data); 
+      setUser(data.user); 
+      localStorage.setItem("user", JSON.stringify(data.user));
+      localStorage.setItem("token", data.access_token); 
+      return true;
+    } catch (err) {
+      console.error('Login error:', err);
+      return false;
+    } finally {
+      setIsLoading(false);
     }
-
-    const data = await res.json();
-    console.log('Login success:', data); // Adicione este log
-    // ... resto do código
-  } catch (err) {
-    console.error('Login error:', err);
-    return false;
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
   const register = async (email: string, password: string, name: string): Promise<boolean> => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/auth/register', {
+      const res = await fetch("http://localhost:8000/auth/register", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password, name }),
-        signal: AbortSignal.timeout(5000) // Timeout de 5 segundos
+        signal: AbortSignal.timeout(5000)
       });
 
       if (!res.ok) {
@@ -98,6 +104,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value = {
     user,
+    isAuthenticated,
     login,
     register,
     logout,
@@ -114,4 +121,3 @@ export const useAuth = () => {
   }
   return context;
 };
-

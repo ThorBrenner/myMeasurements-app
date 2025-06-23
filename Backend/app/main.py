@@ -185,3 +185,10 @@ if __name__ == "__main__":
         port=8000,
         reload=True
     )
+
+
+
+@app.on_event("startup")
+async def create_db_tables():
+    Base.metadata.create_all(bind=engine)
+

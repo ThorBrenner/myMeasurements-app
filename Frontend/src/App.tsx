@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Upload from "./pages/Upload";
 import Dashboard from "./pages/Dashboard";
+import Profile from "./pages/Profile";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             <Route path="/upload" element={<Upload />} />
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

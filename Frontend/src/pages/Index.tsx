@@ -1,10 +1,12 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { Camera, User, Shield, ArrowRight } from "lucide-react";
+import { useAuth } from "@/components/AuthContext";
 
 const Index = () => {
+  const { user, isAuthenticated } = useAuth();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -21,9 +23,18 @@ const Index = () => {
               <Link to="/dashboard" className="text-gray-700 hover:text-indigo-600 transition-colors">Dashboard</Link>
               <Link to="/privacy" className="text-gray-700 hover:text-indigo-600 transition-colors">Privacy</Link>
             </div>
-            <Link to="/login">
-              <Button className="bg-indigo-600 hover:bg-indigo-700">Get Started</Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link to="/profile">
+                <Button className="bg-indigo-600 hover:bg-indigo-700">
+                  <User className="mr-2 h-4 w-4" />
+                  My Profile
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/login">
+                <Button className="bg-indigo-600 hover:bg-indigo-700">Get Started</Button>
+              </Link>
+            )}
           </div>
         </nav>
       </header>
@@ -42,16 +53,34 @@ const Index = () => {
           <div className="inline-flex items-center bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full text-sm font-medium mb-8">
             🚧 Coming Soon - Currently in Development
           </div>
-          <Link to="/upload">
-            <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8 py-3">
-              Try Demo <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </Link>
+          {isAuthenticated ? (
+            <div className="space-y-4">
+              <p className="text-lg text-gray-700 mb-4">Welcome back, {user?.name || 'User'}!</p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/dashboard">
+                  <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8 py-3">
+                    View Dashboard <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <Link to="/upload">
+                  <Button size="lg" variant="outline" className="text-lg px-8 py-3 border-indigo-600 text-indigo-600 hover:bg-indigo-50">
+                    New Analysis <Camera className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <Link to="/upload">
+              <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8 py-3">
+                Try Demo <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+          )}
         </div>
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-3 gap-8 mb-16">
-          <Card className="text-center">
+          <Card className="text-center hover:shadow-lg transition-shadow">
             <CardHeader>
               <Camera className="h-12 w-12 text-indigo-600 mx-auto mb-4" />
               <CardTitle>Simple Photo Upload</CardTitle>
@@ -61,7 +90,7 @@ const Index = () => {
             </CardHeader>
           </Card>
 
-          <Card className="text-center">
+          <Card className="text-center hover:shadow-lg transition-shadow">
             <CardHeader>
               <User className="h-12 w-12 text-indigo-600 mx-auto mb-4" />
               <CardTitle>Precise Measurements</CardTitle>
@@ -71,7 +100,7 @@ const Index = () => {
             </CardHeader>
           </Card>
 
-          <Card className="text-center">
+          <Card className="text-center hover:shadow-lg transition-shadow">
             <CardHeader>
               <Shield className="h-12 w-12 text-indigo-600 mx-auto mb-4" />
               <CardTitle>Privacy First</CardTitle>
