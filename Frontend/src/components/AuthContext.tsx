@@ -28,12 +28,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const isAuthenticated = !!user;
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
-    if (savedUser && token) {
-      setUser(JSON.parse(savedUser));
+    if (token) {
+      console.log("Calling /auth/me with token:", token);
+      fetch("http://localhost:8000/auth/me", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        signal: AbortSignal.timeout(5000),
+      })
+        .then((res) => {
+          console.log("/auth/me response status:", res.status);
+          if (!res.ok) throw new Error("Failed to fetch user data");
+          return res.json();
+        })
+        .then((data) => {
+          console.log("User data received:", data);
+          setUser(data);
+          localStorage.setItem("user", JSON.stringify(data));
+        })
+        .catch((err) => {
+          console.error("/auth/me error:", err);
+          logout();
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
@@ -58,9 +82,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const data = await res.json();
       console.log("Login success:", data); 
-      setUser(data.user); 
-      localStorage.setItem("user", JSON.stringify(data.user));
-      localStorage.setItem("token", data.access_token); 
+      localStorage.setItem("token", data.access_token);
+
+      // Fetch user data immediately after login
+      const userRes = await fetch("http://localhost:8000/auth/me", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${data.access_token}`,
+        },
+        signal: AbortSignal.timeout(5000),
+      });
+
+      if (!userRes.ok) throw new Error("Failed to fetch user profile");
+
+      const userData = await userRes.json();
+      console.log("User from login fetch /me:", userData);
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
+
       return true;
     } catch (err) {
       console.error('Login error:', err);

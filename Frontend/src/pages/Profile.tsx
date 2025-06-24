@@ -40,8 +40,8 @@ const Profile = () => {
               <Link to="/privacy" className="text-gray-700 hover:text-indigo-600 transition-colors">Privacy</Link>
             </div>
             <Button variant="outline" onClick={handleLogout}>
+              <Link to="/" className="text-gray-700 hover:text-indigo-600 transition-colors">Logout</Link>
               <LogOut className="mr-2 h-4 w-4" />
-              Logout
             </Button>
           </div>
         </nav>

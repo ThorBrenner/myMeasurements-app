@@ -6,6 +6,7 @@ from app.models import schemas, user as user_model
 from app.models.database import SessionLocal
 from app.core.auth import hash_password, verify_password, create_access_token
 
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from app.core.auth import SECRET_KEY, ALGORITHM
