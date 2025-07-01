@@ -55,22 +55,21 @@ class PredictionService:
 
     async def predict(
         self,
-        image_tensor: torch.Tensor,
+        front_tensor: torch.Tensor,
+        side_tensor: torch.Tensor,
         height: float,
         weight: float
     ) -> Dict[str, float]:
-        """
-        Make prediction for body measurements
-        """
         try:
             if self.model is None:
                 raise RuntimeError("Model not loaded")
 
-            image_batch = image_tensor.unsqueeze(0).to(self.device)
+            front_tensor = front_tensor.unsqueeze(0).to(self.device)
+            side_tensor = side_tensor.unsqueeze(0).to(self.device)
             height_weight = torch.tensor([[height, weight]], dtype=torch.float32).to(self.device)
 
             with torch.no_grad():
-                predictions = self.model((image_batch, height_weight))
+                predictions = self.model((front_tensor, side_tensor, height_weight))
                 predictions = predictions.cpu().numpy().flatten()
 
             measurements = {

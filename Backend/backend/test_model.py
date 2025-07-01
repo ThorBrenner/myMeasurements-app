@@ -7,6 +7,8 @@ import os
 from PIL import Image
 import numpy as np
 from sklearn.metrics import mean_absolute_error, mean_squared_error
+from torchvision.models import mnasnet1_0, MNASNet1_0_Weights
+
 
 # Configurações
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -17,30 +19,45 @@ BATCH_SIZE = 32
 class BMnet(nn.Module):
     def __init__(self):
         super(BMnet, self).__init__()
-        self.backbone = torch.hub.load('pytorch/vision', 'mnasnet1_0', pretrained=True)
-        for param in self.backbone.parameters():
+
+        from torchvision.models import mnasnet1_0, MNASNet1_0_Weights
+        weights = MNASNet1_0_Weights.DEFAULT
+
+        self.backbone_front = mnasnet1_0(weights=weights)
+        self.backbone_side = mnasnet1_0(weights=weights)
+
+        for param in self.backbone_front.parameters():
             param.requires_grad = False
-        self.backbone.classifier = nn.Identity()
+        for param in self.backbone_side.parameters():
+            param.requires_grad = False
+
+        self.backbone_front.classifier = nn.Identity()
+        self.backbone_side.classifier = nn.Identity()
+
         self.fc = nn.Sequential(
-            nn.Linear(1280 + 2, 512),
+            nn.Linear(1280 * 2 + 2, 512),
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(512, 256),
             nn.ReLU(),
             nn.Dropout(0.5),
-            nn.Linear(256, 14))
+            nn.Linear(256, 14)
+        )
 
     def forward(self, x):
+        front_img, side_img, height_weight = x
         images, height_weight = x
-        features = self.backbone(images)
-        combined = torch.cat((features, height_weight), dim=1)
+        front_feat = self.backbone_front(front_img)
+        side_feat = self.backbone_side(side_img)
+        combined = torch.cat((front_feat, side_feat, height_weight), dim=1)
         return self.fc(combined)
 
 
 # 2. Definir o Dataset (igual ao do treinamento)
 class BodyMDataset(torch.utils.data.Dataset):
     def __init__(self, root_dir, split="testA", transform=None):
-        self.mask_dir = os.path.join(root_dir, split, "mask")
+        self.mask_front_dir = os.path.join(root_dir, split, "mask")
+        self.mask_side_dir = os.path.join(root_dir, split, "mask_left")
         self.mask_left_dir = os.path.join(root_dir, split, "mask_left")
         self.metadata = pd.read_csv(os.path.join(root_dir, split, "hwg_metadata.csv"))
         self.measurements = pd.read_csv(os.path.join(root_dir, split, "measurements.csv"))
@@ -71,7 +88,8 @@ class BodyMDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         row = self.data.iloc[idx]
         photo_id = str(row['photo_id']).strip().lower()
-        front_img_path = os.path.join(self.mask_dir, f"{photo_id}.png")
+        front_img_path = os.path.join(self.mask_front_dir, f"{photo_id}.png")
+        side_img_path = os.path.join(self.mask_side_dir, f"{photo_id}.png")
 
         if not os.path.exists(front_img_path):
             raise FileNotFoundError(f"Arquivo não encontrado: {front_img_path}")
@@ -82,8 +100,9 @@ class BodyMDataset(torch.utils.data.Dataset):
             dtype=torch.float32
         )
         front_img = self.transform(Image.open(front_img_path))
+        side_img = self.transform(Image.open(side_img_path))
 
-        return (front_img, height_weight), measurements
+        return (front_img, side_img, height_weight), measurements
 
 
 # 3. Função para carregar o modelo treinado
@@ -100,11 +119,12 @@ def evaluate_model(model, test_loader):
     all_preds = []
 
     with torch.no_grad():
-        for (inputs, hw), targets in test_loader:
-            inputs = inputs.to(device)
+        for (front, side, hw), targets in test_loader:
+            front = front.to(device)
+            side = side.to(device)
             hw = hw.to(device)
 
-            outputs = model((inputs, hw))
+            outputs = model((front, side, hw))
 
             all_targets.append(targets.cpu().numpy())
             all_preds.append(outputs.cpu().numpy())

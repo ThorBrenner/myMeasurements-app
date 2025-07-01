@@ -4,57 +4,58 @@ from torchvision.models import mnasnet1_0, MNASNet1_0_Weights
 
 class BMnet(nn.Module):
     """
-    Body Measurement Network - Modelo para predição de medidas corporais
-    Combina features extraídas de imagem com altura e peso para estimar 14 medidas.
+    Modelo para predição de medidas corporais usando 2 imagens (frontal e lateral) + altura e peso.
     """
     def __init__(self):
         super(BMnet, self).__init__()
-        
-        # Carrega o modelo MNASNet com pesos pré-treinados
+
+        # Backbone com pesos pré-treinados
         weights = MNASNet1_0_Weights.DEFAULT
-        self.backbone = mnasnet1_0(weights=weights)
-        
-        # Congelar parâmetros do backbone
-        for param in self.backbone.parameters():
+        self.backbone_front = mnasnet1_0(weights=weights)
+        self.backbone_side = mnasnet1_0(weights=weights)
+
+        # Congelar parâmetros
+        for param in self.backbone_front.parameters():
             param.requires_grad = False
-        
-        # Remover classificador original
-        self.backbone.classifier = nn.Identity()
-        
-        # Novo classificador: 1280 (features da imagem) + 2 (altura, peso)
+        for param in self.backbone_side.parameters():
+            param.requires_grad = False
+
+        # Remover os classificadores originais
+        self.backbone_front.classifier = nn.Identity()
+        self.backbone_side.classifier = nn.Identity()
+
+        # Classificador final: 1280 (front) + 1280 (side) + 2 (altura/peso)
         self.fc = nn.Sequential(
-            nn.Linear(1280 + 2, 512),
+            nn.Linear(1280 * 2 + 2, 512),
             nn.ReLU(),
             nn.Dropout(0.5),
             nn.Linear(512, 256),
             nn.ReLU(),
             nn.Dropout(0.5),
-            nn.Linear(256, 14)  # 14 medidas corporais
+            nn.Linear(256, 14)
         )
 
-    def forward(self, x: tuple[torch.Tensor, torch.Tensor]) -> torch.Tensor:
+    def forward(self, x: tuple[torch.Tensor, torch.Tensor, torch.Tensor]) -> torch.Tensor:
         """
-        Passagem direta pelo modelo.
         Args:
-            x: tuple (images, height_weight)
-                - images: tensor [batch_size, 3, 224, 224]
-                - height_weight: tensor [batch_size, 2]
-        Returns:
-            Tensor [batch_size, 14] com as medidas preditas
+            x: (front_image, side_image, height_weight)
+            - front_image: [B, 3, 224, 224]
+            - side_image: [B, 3, 224, 224]
+            - height_weight: [B, 2]
         """
-        images, height_weight = x
+        front_image, side_image, height_weight = x
 
-        # Extrai features visuais
-        features = self.backbone(images)  # [batch_size, 1280]
+        # Extrai features das duas imagens
+        front_feat = self.backbone_front(front_image)
+        side_feat = self.backbone_side(side_image)
 
-        # Concatena features com altura e peso
-        combined = torch.cat((features, height_weight), dim=1)  # [batch_size, 1282]
+        # Concatena features + altura/peso
+        combined = torch.cat((front_feat, side_feat, height_weight), dim=1)  # [B, 2562]
 
         return self.fc(combined)
 
     @property
     def measurement_columns(self) -> list:
-        """Nomes das medidas corporais preditas pelo modelo"""
         return [
             'ankle', 'arm-length', 'bicep', 'calf', 'chest', 'forearm',
             'height', 'hip', 'leg-length', 'shoulder-breadth',

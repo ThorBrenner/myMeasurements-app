@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import Dict, Optional
 from pydantic import BaseModel, EmailStr
+from datetime import datetime
 
 class PredictionResponse(BaseModel):
     """Response model for predictions"""
@@ -38,3 +39,33 @@ class UserInDB(UserBase):
 
 class UserResponse(UserBase):
     id: str
+
+class BodyMeasurementBase(BaseModel):
+    height_cm: Optional[float] = None
+    weight_kg: Optional[float] = None
+    chest_cm: Optional[float] = None
+    waist_cm: Optional[float] = None
+    hip_cm: Optional[float] = None
+    thigh_cm: Optional[float] = None
+    bicep_cm: Optional[float] = None
+    ankle_cm: Optional[float] = None
+    arm_length_cm: Optional[float] = None
+    calf_cm: Optional[float] = None
+    forearm_cm: Optional[float] = None
+    leg_length_cm: Optional[float] = None
+    shoulder_breadth_cm: Optional[float] = None
+    shoulder_to_crotch_cm: Optional[float] = None
+    wrist_cm: Optional[float] = None
+
+class BodyMeasurementCreate(BodyMeasurementBase):
+    pass
+
+class BodyMeasurementResponse(BodyMeasurementBase):
+    id: str
+    user_id: str
+    timestamp: datetime
+
+    class Config:
+        orm_mode = True
+
+

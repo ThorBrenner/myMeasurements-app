@@ -1,13 +1,34 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useLocation } from "react-router-dom";
-import { User, ArrowLeft, Download, Share } from "lucide-react";
+import { User, ArrowLeft, Download, Share, Upload as UploadIcon } from "lucide-react";
 import { MeasurementDisplay } from "@/components/MeasurementDisplay";
 import { BodyViewer3D } from "@/components/BodyViewer3D";
+import { MeasurementHistory } from "@/components/MeasurementHistory";
+import { useAuth } from "@/components/AuthContext";
 
 const Dashboard = () => {
   const { state } = useLocation();
   const measurements = state?.measurements;
+  const { user, isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Authentication Required</CardTitle>
+            <CardDescription>Please log in to view your dashboard</CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Link to="/login">
+              <Button>Go to Login</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -59,7 +80,22 @@ const Dashboard = () => {
             {measurements ? (
               <MeasurementDisplay measurements={measurements} />
             ) : (
-              <p className="text-gray-500">No measurements available. Please upload photos.</p>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Latest Measurement</CardTitle>
+                  <CardDescription>Your most recent body analysis will appear here</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center py-8">
+                  <UploadIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500 mb-4">No recent measurements found</p>
+                  <Link to="/upload">
+                    <Button>
+                      <UploadIcon className="mr-2 h-4 w-4" />
+                      Upload Photos
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
             )}
           </div>
 
@@ -67,6 +103,11 @@ const Dashboard = () => {
           <div className="lg:col-span-2">
             <BodyViewer3D />
           </div>
+        </div>
+
+        {/* Measurement History */}
+        <div className="mt-12">
+          <MeasurementHistory />
         </div>
 
         {/* Additional Information */}

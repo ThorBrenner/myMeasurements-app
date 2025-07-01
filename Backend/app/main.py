@@ -15,7 +15,7 @@ from .services.image_service import ImageService
 from .models.schemas import PredictionResponse, ErrorResponse
 from .core.config import settings
 
-from app.routers import auth
+from app.routers import auth, measurements
 from app.models.database import Base, engine
 
 # Configure logging
@@ -30,6 +30,7 @@ app = FastAPI(
 )
 
 app.include_router(auth.router)
+app.include_router(measurements.router)
 
 # Configure CORS
 app.add_middleware(

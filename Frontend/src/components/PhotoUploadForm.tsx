@@ -6,27 +6,31 @@ import { Label } from "@/components/ui/label";
 import { Upload, Image as ImageIcon, User, Scale, Ruler, Calendar, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuth } from "@/components/AuthContext";
 
 
 interface UserDetails {
-  gender: string;
   height: string;
   weight: string;
-  age: string;
 }
 
 export const PhotoUploadForm = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [frontPhoto, setFrontPhoto] = useState<File | null>(null);
   const [sidePhoto, setSidePhoto] = useState<File | null>(null);
   const [userDetails, setUserDetails] = useState<UserDetails>({
-    gender: '',
     height: '',
-    weight: '',
-    age: ''
+    weight: ''
   });
   const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState<Partial<UserDetails>>({});
+
+  // Verificar se o usuário está autenticado
+  if (!isAuthenticated) {
+    navigate('/login');
+    return null;
+  }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'front' | 'side') => {
     const file = event.target.files?.[0];
@@ -54,10 +58,8 @@ export const PhotoUploadForm = () => {
   const validateForm = (): boolean => {
     const newErrors: Partial<UserDetails> = {};
 
-    if (!userDetails.gender) newErrors.gender = 'Gender is required';
     if (!userDetails.height) newErrors.height = 'Height is required';
     if (!userDetails.weight) newErrors.weight = 'Weight is required';
-    if (!userDetails.age) newErrors.age = 'Age is required';
 
     // Validate numeric fields
     if (userDetails.height && (isNaN(Number(userDetails.height)) || Number(userDetails.height) <= 0)) {
@@ -65,9 +67,6 @@ export const PhotoUploadForm = () => {
     }
     if (userDetails.weight && (isNaN(Number(userDetails.weight)) || Number(userDetails.weight) <= 0)) {
       newErrors.weight = 'Please enter a valid weight';
-    }
-    if (userDetails.age && (isNaN(Number(userDetails.age)) || Number(userDetails.age) <= 0 || Number(userDetails.age) > 120)) {
-      newErrors.age = 'Please enter a valid age (1-120)';
     }
 
     setErrors(newErrors);
@@ -78,47 +77,56 @@ export const PhotoUploadForm = () => {
     e.preventDefault();
 
     if (!frontPhoto || !sidePhoto) {
-      alert("Please upload both front and side photos");
+      toast.error("Please upload both front and side photos");
       return;
     }
 
     if (!validateForm()) {
+      toast.error("Please fill in all required fields correctly");
       return;
     }
 
     setIsUploading(true);
 
     const formData = new FormData();
-    formData.append('front', frontPhoto);
-    formData.append('side', sidePhoto);
-    formData.append('gender', userDetails.gender);
+    formData.append('front_photo', frontPhoto);
+    formData.append('side_photo', sidePhoto);
     formData.append('height', userDetails.height);
     formData.append('weight', userDetails.weight);
-    formData.append('age', userDetails.age);
 
     try {
-      const response = await fetch('http://localhost:8000/predict-multi', {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error("Authentication token not found");
+      }
+
+      const response = await fetch('http://localhost:8000/measurements/upload-photos', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         body: formData,
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Upload failed");
+        throw new Error(error.detail || "Upload failed");
       }
 
       const data = await response.json();
-
-      navigate('/dashboard', { state: { measurements: data.measurements } });
+      
+      toast.success("Photos uploaded and measurements calculated successfully!");
+      navigate('/dashboard', { state: { measurements: data.measurement } });
 
     } catch (error: any) {
-      alert(`Upload failed: ${error.message}`);
+      console.error('Upload error:', error);
+      toast.error(`Upload failed: ${error.message}`);
     } finally {
       setIsUploading(false);
     }
   };
 
-  const isFormValid = frontPhoto && sidePhoto && userDetails.gender && userDetails.height && userDetails.weight && userDetails.age;
+  const isFormValid = frontPhoto && sidePhoto && userDetails.height && userDetails.weight;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4">
@@ -141,28 +149,7 @@ export const PhotoUploadForm = () => {
               <h2 className="text-2xl font-semibold text-gray-900">Personal Information</h2>
             </div>
             
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {/* Gender */}
-              <div className="space-y-2">
-                <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
-                  Gender
-                </label>
-                <select
-                  id="gender"
-                  value={userDetails.gender}
-                  onChange={(e) => handleInputChange('gender', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                    errors.gender ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                >
-                  <option value="">Select gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-                {errors.gender && <p className="text-sm text-red-600">{errors.gender}</p>}
-              </div>
-
+            <div className="grid md:grid-cols-2 gap-6">
               {/* Height */}
               <div className="space-y-2">
                 <label htmlFor="height" className="block text-sm font-medium text-gray-700">
@@ -204,27 +191,6 @@ export const PhotoUploadForm = () => {
                   }`}
                 />
                 {errors.weight && <p className="text-sm text-red-600">{errors.weight}</p>}
-              </div>
-
-              {/* Age */}
-              <div className="space-y-2">
-                <label htmlFor="age" className="block text-sm font-medium text-gray-700">
-                  <Calendar className="inline h-4 w-4 mr-1" />
-                  Age (years)
-                </label>
-                <input
-                  type="number"
-                  id="age"
-                  value={userDetails.age}
-                  onChange={(e) => handleInputChange('age', e.target.value)}
-                  placeholder="25"
-                  min="1"
-                  max="120"
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                    errors.age ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                />
-                {errors.age && <p className="text-sm text-red-600">{errors.age}</p>}
               </div>
             </div>
           </div>
@@ -349,7 +315,7 @@ export const PhotoUploadForm = () => {
             
             {!isFormValid && (
               <p className="mt-3 text-sm text-gray-500">
-                Please complete all fields and upload both photos to continue
+                Please complete height and weight fields and upload both photos to continue
               </p>
             )}
           </div>
