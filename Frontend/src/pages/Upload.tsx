@@ -2,11 +2,35 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { User, Upload as UploadIcon, Camera, ArrowLeft, AlertCircle } from "lucide-react";
 import { PhotoUploadForm } from "@/components/PhotoUploadForm";
+import { useAuth } from "@/components/AuthContext";
 
 const Upload = () => {
+
+  const { state } = useLocation();
+  const measurements = state?.measurements;
+  const { user, isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Authentication Required</CardTitle>
+            <CardDescription>Please log in to view your history</CardDescription>
+            </CardHeader>
+            <CardContent className="text-center">
+              <Link to="/login">
+                <Button>Go to Login</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -20,7 +44,7 @@ const Upload = () => {
             <div className="hidden md:flex space-x-8">
               <Link to="/" className="text-gray-700 hover:text-indigo-600 transition-colors">Home</Link>
               <Link to="/upload" className="text-indigo-600 font-medium">Upload</Link>
-              <Link to="/dashboard" className="text-gray-700 hover:text-indigo-600 transition-colors">Dashboard</Link>
+              <Link to="/history" className="text-gray-700 hover:text-indigo-600 transition-colors">History</Link>
               <Link to="/privacy" className="text-gray-700 hover:text-indigo-600 transition-colors">Privacy</Link>
             </div>
             <Link to="/">
@@ -34,6 +58,12 @@ const Upload = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+
+        {/* Upload Form */}
+        <div className="mb-8">
+          <PhotoUploadForm />
+        </div>
+
         <div className="text-center mb-12">
           <UploadIcon className="h-16 w-16 text-indigo-600 mx-auto mb-4" />
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Upload Your Photos</h2>
@@ -94,8 +124,6 @@ const Upload = () => {
           </div>
         </div>
 
-        {/* Upload Form */}
-        <PhotoUploadForm />
       </main>
     </div>
   );

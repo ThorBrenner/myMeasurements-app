@@ -1,34 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, useLocation } from "react-router-dom";
-import { User, ArrowLeft, Download, Share, Upload as UploadIcon } from "lucide-react";
+import { User, ArrowLeft, Download, Share } from "lucide-react";
 import { MeasurementDisplay } from "@/components/MeasurementDisplay";
 import { BodyViewer3D } from "@/components/BodyViewer3D";
-import { MeasurementHistory } from "@/components/MeasurementHistory";
-import { useAuth } from "@/components/AuthContext";
 
 const Dashboard = () => {
   const { state } = useLocation();
   const measurements = state?.measurements;
-  const { user, isAuthenticated } = useAuth();
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle>Authentication Required</CardTitle>
-            <CardDescription>Please log in to view your dashboard</CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Link to="/login">
-              <Button>Go to Login</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -43,7 +22,7 @@ const Dashboard = () => {
             <div className="hidden md:flex space-x-8">
               <Link to="/" className="text-gray-700 hover:text-indigo-600 transition-colors">Home</Link>
               <Link to="/upload" className="text-gray-700 hover:text-indigo-600 transition-colors">Upload</Link>
-              <Link to="/dashboard" className="text-indigo-600 font-medium">Dashboard</Link>
+              <Link to="/history" className="text-gray-700 hover:text-indigo-600 transition-colors">History</Link>
               <Link to="/privacy" className="text-gray-700 hover:text-indigo-600 transition-colors">Privacy</Link>
             </div>
             <Link to="/upload">
@@ -74,40 +53,9 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Measurements Panel */}
-          <div className="lg:col-span-1">
-            {measurements ? (
-              <MeasurementDisplay measurements={measurements} />
-            ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Latest Measurement</CardTitle>
-                  <CardDescription>Your most recent body analysis will appear here</CardDescription>
-                </CardHeader>
-                <CardContent className="text-center py-8">
-                  <UploadIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500 mb-4">No recent measurements found</p>
-                  <Link to="/upload">
-                    <Button>
-                      <UploadIcon className="mr-2 h-4 w-4" />
-                      Upload Photos
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* 3D Viewer Panel */}
-          <div className="lg:col-span-2">
-            <BodyViewer3D />
-          </div>
-        </div>
-
-        {/* Measurement History */}
+        {/* Measurements Panel */}
         <div className="mt-12">
-          <MeasurementHistory />
+            <MeasurementDisplay measurements={measurements} />
         </div>
 
         {/* Additional Information */}

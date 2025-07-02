@@ -20,7 +20,7 @@ const Index = () => {
             <div className="hidden md:flex space-x-8">
               <Link to="/" className="text-gray-700 hover:text-indigo-600 transition-colors">Home</Link>
               <Link to="/upload" className="text-gray-700 hover:text-indigo-600 transition-colors">Upload</Link>
-              <Link to="/dashboard" className="text-gray-700 hover:text-indigo-600 transition-colors">Dashboard</Link>
+              <Link to="/history" className="text-gray-700 hover:text-indigo-600 transition-colors">History</Link>
               <Link to="/privacy" className="text-gray-700 hover:text-indigo-600 transition-colors">Privacy</Link>
             </div>
             {isAuthenticated ? (

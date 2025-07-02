@@ -10,8 +10,10 @@ import { useAuth } from "@/components/AuthContext";
 
 
 interface UserDetails {
+  gender: string;
   height: string;
   weight: string;
+  age: string;
 }
 
 export const PhotoUploadForm = () => {
@@ -20,8 +22,10 @@ export const PhotoUploadForm = () => {
   const [frontPhoto, setFrontPhoto] = useState<File | null>(null);
   const [sidePhoto, setSidePhoto] = useState<File | null>(null);
   const [userDetails, setUserDetails] = useState<UserDetails>({
+    gender: '',
     height: '',
-    weight: ''
+    weight: '',
+    age: ''
   });
   const [isUploading, setIsUploading] = useState(false);
   const [errors, setErrors] = useState<Partial<UserDetails>>({});
@@ -58,8 +62,10 @@ export const PhotoUploadForm = () => {
   const validateForm = (): boolean => {
     const newErrors: Partial<UserDetails> = {};
 
+    if (!userDetails.gender) newErrors.gender = 'Gender is required';
     if (!userDetails.height) newErrors.height = 'Height is required';
     if (!userDetails.weight) newErrors.weight = 'Weight is required';
+    if (!userDetails.age) newErrors.age = 'Age is required';
 
     // Validate numeric fields
     if (userDetails.height && (isNaN(Number(userDetails.height)) || Number(userDetails.height) <= 0)) {
@@ -67,6 +73,9 @@ export const PhotoUploadForm = () => {
     }
     if (userDetails.weight && (isNaN(Number(userDetails.weight)) || Number(userDetails.weight) <= 0)) {
       newErrors.weight = 'Please enter a valid weight';
+    }
+    if (userDetails.age && (isNaN(Number(userDetails.age)) || Number(userDetails.age) <= 12 || Number(userDetails.age) > 120)) {
+      newErrors.age = 'Please enter a valid age';
     }
 
     setErrors(newErrors);
@@ -91,8 +100,10 @@ export const PhotoUploadForm = () => {
     const formData = new FormData();
     formData.append('front_photo', frontPhoto);
     formData.append('side_photo', sidePhoto);
+    formData.append('gender', userDetails.gender);
     formData.append('height', userDetails.height);
     formData.append('weight', userDetails.weight);
+    formData.append('age', userDetails.age);
 
     try {
       const token = localStorage.getItem('token');
@@ -126,7 +137,7 @@ export const PhotoUploadForm = () => {
     }
   };
 
-  const isFormValid = frontPhoto && sidePhoto && userDetails.height && userDetails.weight;
+  const isFormValid = frontPhoto && sidePhoto && userDetails.gender && userDetails.height && userDetails.weight && userDetails.age;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4">
@@ -150,6 +161,48 @@ export const PhotoUploadForm = () => {
             </div>
             
             <div className="grid md:grid-cols-2 gap-6">
+              {/* Gender */}
+              <div className="space-y-2">
+                <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
+                  Gender
+                </label>
+                <select
+                  id="gender"
+                  value={userDetails.gender}
+                  onChange={(e) => handleInputChange('gender', e.target.value)}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
+                    errors.gender ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+                {errors.gender && <p className="text-sm text-red-600">{errors.gender}</p>}
+              </div>
+
+              {/* Age */}
+              <div className="space-y-2">
+                <label htmlFor="age" className="block text-sm font-medium text-gray-700">
+                  <Calendar className="inline h-4 w-4 mr-1" />
+                  Age (years)
+                </label>
+                <input
+                  type="number"
+                  id="age"
+                  value={userDetails.age}
+                  onChange={(e) => handleInputChange('age', e.target.value)}
+                  placeholder="25"
+                  min="1"
+                  max="120"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
+                    errors.age ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                />
+                {errors.age && <p className="text-sm text-red-600">{errors.age}</p>}
+              </div>
+
               {/* Height */}
               <div className="space-y-2">
                 <label htmlFor="height" className="block text-sm font-medium text-gray-700">

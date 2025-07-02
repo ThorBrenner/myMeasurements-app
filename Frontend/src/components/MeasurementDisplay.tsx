@@ -1,134 +1,150 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Ruler } from "lucide-react";
+import { toast } from "sonner";
 
-interface MeasurementDisplayProps {
-  measurements: Record<string, number>;
+interface BodyMeasurement {
+  timestamp: string;
+  [key: string]: number | string | null;
 }
 
-interface MeasurementItem {
-  label: string;
-  value: string;
-  unit: string;
-  accuracy: string;
-}
+const allowedMeasurements = [
+  "ankle",
+  "arm-length",
+  "bicep",
+  "calf",
+  "chest",
+  "forearm",
+  "height",
+  "hip",
+  "leg-length",
+  "shoulder-breadth",
+  "shoulder-to-crotch",
+  "thigh",
+  "waist",
+  "wrist"
+];
 
-export const MeasurementDisplay = ({ measurements }: MeasurementDisplayProps) => {
-  const rawMeasurements = measurements;
+const labelMap: Record<string, string> = {
+  height: "Height",
+  chest: "Chest",
+  waist: "Waist",
+  hip: "Hips",
+  "shoulder-breadth": "Shoulder Width",
+  "arm-length": "Arm Length",
+  "leg-length": "Leg Length",
+  neck: "Neck",
+  bicep: "Bicep",
+  calf: "Calf",
+  thigh: "Thigh",
+  wrist: "Wrist",
+  ankle: "Ankle",
+  forearm: "Forearm",
+  "shoulder-to-crotch": "Shoulder to Crotch"
+};
 
-  // Lista das medidas que devem ser exibidas
-  const allowedMeasurements = [
-    'ankle', 'arm-length', 'bicep', 'calf', 'chest', 'forearm',
-    'height', 'hip', 'leg-length', 'shoulder-breadth',
-    'shoulder-to-crotch', 'thigh', 'waist', 'wrist'
+const getMeasurementColor = (index: number): string => {
+  const colors = [
+    "bg-blue-50 text-blue-900",
+    "bg-green-50 text-green-900",
+    "bg-purple-50 text-purple-900",
+    "bg-orange-50 text-orange-900",
+    "bg-pink-50 text-pink-900",
+    "bg-indigo-50 text-indigo-900",
+    "bg-teal-50 text-teal-900",
+    "bg-red-50 text-red-900",
+    "bg-yellow-50 text-yellow-900",
+    "bg-cyan-50 text-cyan-900",
+    "bg-emerald-50 text-emerald-900",
+    "bg-violet-50 text-violet-900",
+    "bg-rose-50 text-rose-900",
+    "bg-amber-50 text-amber-900"
   ];
+  return colors[index % colors.length];
+};
 
-  const mapLabel = (key: string) => {
-    const labelMap: Record<string, string> = {
-      height: "Height",
-      chest: "Chest",
-      waist: "Waist",
-      hip: "Hips",
-      "shoulder-breadth": "Shoulder Width",
-      "arm-length": "Arm Length",
-      "leg-length": "Leg Length",
-      neck: "Neck",
-      bicep: "Bicep",
-      calf: "Calf",
-      thigh: "Thigh",
-      wrist: "Wrist",
-      ankle: "Ankle",
-      forearm: "Forearm",
-      "shoulder-to-crotch": "Shoulder to Crotch"
-    };
-    return labelMap[key] || key.charAt(0).toUpperCase() + key.slice(1).replace('-', ' ');
-  };
+export const MeasurementDisplay = ({
+  measurements: propMeasurements
+}: {
+  measurements?: Record<string, number>;
+}) => {
+  const [measurements, setMeasurements] = useState<Record<string, number> | null>(
+    propMeasurements || null
+  );
+  const [isLoading, setIsLoading] = useState(!propMeasurements);
 
-  const getAccuracyColor = (accuracy: string) => {
-    switch (accuracy) {
-      case "high":
-        return "bg-green-100 text-green-800";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800";
-      case "low":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+  useEffect(() => {
+    if (!propMeasurements) {
+      fetchLatestMeasurement();
+    }
+  }, [propMeasurements]);
+
+  const fetchLatestMeasurement = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("No token found");
+
+      const response = await fetch("http://localhost:8000/measurements/", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch measurements");
+
+      const data = await response.json();
+      const latest = data.reduce((a: any, b: any) =>
+        new Date(a.timestamp) > new Date(b.timestamp) ? a : b
+      );
+
+      const filtered = Object.fromEntries(
+        Object.entries(latest).filter(
+          ([k, v]) => allowedMeasurements.includes(k) && typeof v === "number"
+        )
+      ) as Record<string, number>;
+
+      setMeasurements(filtered);
+    } catch (e) {
+      console.error(e);
+      toast.error("Error loading measurements");
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  const getAccuracyPercentage = (accuracy: string) => {
-    switch (accuracy) {
-      case "high":
-        return "95%";
-      case "medium":
-        return "85%";
-      case "low":
-        return "70%";
-      default:
-        return "N/A";
-    }
-  };
-
-  // Filtrar apenas as medidas permitidas
-  const filteredMeasurements = Object.entries(rawMeasurements)
-    .filter(([key]) => allowedMeasurements.includes(key))
-    .sort(([a], [b]) => {
-      // Ordenar de acordo com a ordem da lista allowedMeasurements
-      return allowedMeasurements.indexOf(a) - allowedMeasurements.indexOf(b);
-    });
-
-  const measurementsList: MeasurementItem[] = filteredMeasurements.map(([key, value]) => ({
-    label: mapLabel(key),
-    value: String(value),
-    unit: "cm",
-    accuracy: "high" // Placeholder accuracy until you implement real logic
-  }));
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Body Measurements</CardTitle>
-        <CardDescription>
-          AI-estimated measurements with accuracy indicators ({measurementsList.length} measurements)
-        </CardDescription>
+        <CardTitle>Latest Body Measurements</CardTitle>
+        <CardDescription>Showing your most recent measurements</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {measurementsList.length > 0 ? (
-            measurementsList.map((measurement, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-gray-900">{measurement.label}</span>
-                    <Badge className={`text-xs ${getAccuracyColor(measurement.accuracy)}`}>
-                      {getAccuracyPercentage(measurement.accuracy)}
-                    </Badge>
-                  </div>
-                  <div className="text-2xl font-bold text-indigo-600">
-                    {measurement.value}
-                    <span className="text-sm font-normal text-gray-500 ml-1">
-                      {measurement.unit}
-                    </span>
-                  </div>
-                </div>
+        {isLoading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+            <p className="mt-2 text-gray-600">Loading measurements...</p>
+          </div>
+        ) : measurements && Object.keys(measurements).length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {Object.entries(measurements).map(([key, value], index) => (
+              <div
+                key={key}
+                className={`text-center p-3 rounded-lg ${getMeasurementColor(index)}`}
+              >
+                {key === "height" && (
+                  <Ruler className="h-5 w-5 mx-auto mb-1" />
+                )}
+                <p className="text-sm text-gray-600">{labelMap[key] || key}</p>
+                <div className="text-lg font-semibold">{value} cm</div>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-500">No measurements available for the specified criteria.</p>
-            </div>
-          )}
-        </div>
-
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">Measurement Notes</h4>
-          <ul className="text-sm text-blue-700 space-y-1">
-            <li>• Measurements are estimates based on photo analysis</li>
-            <li>• Only specific measurements are displayed as configured</li>
-            <li>• Accuracy may vary based on photo quality and clothing</li>
-            <li>• For critical measurements, confirm with manual measuring</li>
-          </ul>
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No measurements found.</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
