@@ -1,0 +1,86 @@
+# --------------------------------------------------
+# General
+# --------------------------------------------------
+.DS_Store
+*.log
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.hprof
+*.keystore
+!debug.keystore
+
+# --------------------------------------------------
+# Node.js / JavaScript / TypeScript
+# --------------------------------------------------
+**/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+coverage
+dist
+dist-ssr
+*.local
+
+# --------------------------------------------------
+# Yarn (v2+)
+# --------------------------------------------------
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+# --------------------------------------------------
+# Frontend / Vite / React
+# --------------------------------------------------
+**/.vscode/*
+!.vscode/extensions.json
+.idea
+
+# --------------------------------------------------
+# Python / FastAPI
+# --------------------------------------------------
+**/__pycache__/
+**/.pytest_cache/
+*.pyc
+*.pyo
+*.pyd
+
+# --------------------------------------------------
+# Build artifacts / Temp
+# --------------------------------------------------
+*.db
+*.sqlite3
+.env
+.env.*
+.envrc
+*.egg-info/
+.eggs/
+.installed.cfg
+*.egg
+*.bak
+*.tmp
+*.swp
+*.orig
+*.old
+*.pid
+*.coverage
+.cache/
+.mypy_cache/
+.pytest_cache/
+.tox/
+.coverage.*
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pyre/
+.pytype/
+.dmypy.json

@@ -1,0 +1,34 @@
+services:
+  body-sim-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - ./Backend/models:/app/models
+      - ./Backend/uploads:/app/uploads
+      - ./Backend/temp:/app/temp
+    networks:
+      - my-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  my-measurements-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    depends_on:
+      - body-sim-backend
+    networks:
+      - my-net
+
+networks:
+  my-net:
