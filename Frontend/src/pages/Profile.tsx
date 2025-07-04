@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
@@ -7,21 +8,51 @@ import { useAuth } from "@/components/AuthContext";
 const Profile = () => {
   const { user, logout } = useAuth();
 
-  // Mock user data - in a real app, this would come from your backend
-  const profileData = {
-    name: user?.name || "John Doe",
-    email: user?.email || "john.doe@example.com",
-    phone: "+1 (555) 123-4567",
-    location: "New York, NY",
-    joinDate: "January 2024",
-    totalAnalyses: 12,
-    avgAccuracy: "94.2%",
-    lastAnalysis: "2 days ago"
-  };
+  const [totalAnalyses, setTotalAnalyses] = useState<number>(0);
+  const [lastAnalysis, setLastAnalysis] = useState<string>("");
 
   const handleLogout = () => {
     logout();
   };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  };
+
+  useEffect(() => {
+    const fetchMeasurements = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("Authentication token not found");
+
+        const response = await fetch("http://localhost:8000/measurements/", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json"
+          }
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch measurements");
+
+        const data = await response.json();
+        setTotalAnalyses(data.length);
+        if (data.length > 0) {
+          setLastAnalysis(formatDate(data[0].timestamp)); // mais recente
+        }
+      } catch (error) {
+        console.error("Erro ao buscar medições:", error);
+      }
+    };
+
+    fetchMeasurements();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -58,10 +89,9 @@ const Profile = () => {
               <div className="w-3 h-3 bg-white rounded-full"></div>
             </div>
           </div>
-          <h2 className="text-4xl font-bold text-gray-900 mb-2">{profileData.name}</h2>
+          <h2 className="text-4xl font-bold text-gray-900 mb-2">{user.name}</h2>
           <p className="text-xl text-gray-600 mb-6">BodySim AI User</p>
-          
-          {/* Quick Access Dashboard Button */}
+
           <Link to="/dashboard">
             <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-lg px-8 py-3 shadow-lg hover:shadow-xl transition-all">
               View Dashboard <ArrowRight className="ml-2 h-5 w-5" />
@@ -86,34 +116,33 @@ const Profile = () => {
                   <Mail className="h-5 w-5 text-gray-500 mr-3" />
                   <div>
                     <p className="text-sm text-gray-600">Email</p>
-                    <p className="font-medium text-gray-900">{profileData.email}</p>
+                    <p className="font-medium text-gray-900">{user.email}</p>
                   </div>
                 </div>
                 <div className="flex items-center p-4 bg-gray-50 rounded-lg">
                   <Phone className="h-5 w-5 text-gray-500 mr-3" />
                   <div>
                     <p className="text-sm text-gray-600">Phone</p>
-                    <p className="font-medium text-gray-900">{profileData.phone}</p>
+                    <p className="font-medium text-gray-900">+1 (555) 123-4567</p>
                   </div>
                 </div>
                 <div className="flex items-center p-4 bg-gray-50 rounded-lg">
                   <MapPin className="h-5 w-5 text-gray-500 mr-3" />
                   <div>
                     <p className="text-sm text-gray-600">Location</p>
-                    <p className="font-medium text-gray-900">{profileData.location}</p>
+                    <p className="font-medium text-gray-900">New York, NY</p>
                   </div>
                 </div>
                 <div className="flex items-center p-4 bg-gray-50 rounded-lg">
                   <Calendar className="h-5 w-5 text-gray-500 mr-3" />
                   <div>
                     <p className="text-sm text-gray-600">Member Since</p>
-                    <p className="font-medium text-gray-900">{profileData.joinDate}</p>
+                    <p className="font-medium text-gray-900">January 2024</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Account Actions */}
             <Card className="shadow-lg hover:shadow-xl transition-shadow">
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -124,24 +153,14 @@ const Profile = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid sm:grid-cols-2 gap-4">
-                  <Link to="/upload">
-                    <Button variant="outline" className="w-full justify-start hover:bg-blue-50 hover:border-blue-300">
-                      <Activity className="mr-2 h-4 w-4" />
-                      New Analysis
+                  <Link to="">
+                    <Button variant="outline" className="w-full">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Edit Profile
                     </Button>
                   </Link>
-                  <Link to="/dashboard">
-                    <Button variant="outline" className="w-full justify-start hover:bg-green-50 hover:border-green-300">
-                      <BarChart3 className="mr-2 h-4 w-4" />
-                      View Results
-                    </Button>
-                  </Link>
-                  <Button variant="outline" className="w-full justify-start hover:bg-purple-50 hover:border-purple-300">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Edit Profile
-                  </Button>
-                  <Link to="/privacy">
-                    <Button variant="outline" className="w-full justify-start hover:bg-gray-50 hover:border-gray-300">
+                  <Link to="">
+                    <Button variant="outline" className="w-full">
                       <User className="mr-2 h-4 w-4" />
                       Privacy Settings
                     </Button>
@@ -160,16 +179,12 @@ const Profile = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="text-3xl font-bold text-blue-600 mb-1">{profileData.totalAnalyses}</div>
                   <div className="text-sm text-blue-700">Total Analyses</div>
+                  <div className="text-3xl font-bold text-blue-600 mb-1">{totalAnalyses}</div>
                 </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="text-3xl font-bold text-green-600 mb-1">{profileData.avgAccuracy}</div>
-                  <div className="text-sm text-green-700">Average Accuracy</div>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <div className="text-lg font-semibold text-purple-600 mb-1">{profileData.lastAnalysis}</div>
-                  <div className="text-sm text-purple-700">Last Analysis</div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <div className="text-sm text-blue-700">Last Analysis</div>
+                  <div className="text-lg font-semibold text-blue-600 mb-1">{lastAnalysis || "N/A"}</div>
                 </div>
               </CardContent>
             </Card>
@@ -179,10 +194,10 @@ const Profile = () => {
                 <CardTitle className="text-center">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Link to="/dashboard" className="block">
-                  <Button className="w-full bg-indigo-600 hover:bg-indigo-700">
+                <Link to="/history" className="block">
+                  <Button variant="outline" className="w-full">
                     <BarChart3 className="mr-2 h-4 w-4" />
-                    Go to Dashboard
+                    View Results
                   </Button>
                 </Link>
                 <Link to="/upload" className="block">
