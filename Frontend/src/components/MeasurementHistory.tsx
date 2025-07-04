@@ -5,6 +5,60 @@ import { Calendar, Ruler, Scale, TrendingUp, TrendingDown, Minus } from "lucide-
 import { useAuth } from "@/components/AuthContext";
 import { toast } from "sonner";
 
+const orderedMeasurements = [
+  "weight",
+  "height",
+  "ankle",
+  "arm-length",
+  "bicep",
+  "calf",
+  "chest",
+  "forearm",
+  "hip",
+  "leg-length",
+  "shoulder-breadth",
+  "shoulder-to-crotch",
+  "thigh",
+  "waist",
+  "wrist"
+];
+
+const labelMap: Record<string, string> = {
+  height: "Height",
+  chest: "Chest",
+  waist: "Waist",
+  hip: "Hip",
+  thigh: "Thigh",
+  bicep: "Bicep",
+  ankle: "Ankle",
+  "arm-length": "Arm Length",
+  calf: "Calf",
+  forearm: "Forearm",
+  "leg-length": "Leg Length",
+  "shoulder-breadth": "Shoulder Width",
+  "shoulder-to-crotch": "Shoulder to Crotch",
+  wrist: "Wrist",
+  weight: "Weight"
+};
+
+const keyToFieldMap: Record<string, keyof BodyMeasurement> = {
+  height: "height_cm",
+  chest: "chest_cm",
+  waist: "waist_cm",
+  hip: "hip_cm",
+  thigh: "thigh_cm",
+  bicep: "bicep_cm",
+  ankle: "ankle_cm",
+  "arm-length": "arm_length_cm",
+  calf: "calf_cm",
+  forearm: "forearm_cm",
+  "leg-length": "leg_length_cm",
+  "shoulder-breadth": "shoulder_breadth_cm",
+  "shoulder-to-crotch": "shoulder_to_crotch_cm",
+  wrist: "wrist_cm",
+  weight: "weight_kg"
+};
+
 interface BodyMeasurement {
   id: string;
   user_id: string;
@@ -31,13 +85,6 @@ export const MeasurementHistory = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { user, isAuthenticated } = useAuth();
 
-  // Lista das medidas que devem ser exibidas
-  const allowedMeasurements = [
-    'ankle', 'arm-length', 'bicep', 'calf', 'chest', 'forearm',
-    'height', 'hip', 'leg-length', 'shoulder-breadth',
-    'shoulder-to-crotch', 'thigh', 'waist', 'wrist'
-  ];
-
   useEffect(() => {
     if (isAuthenticated) {
       fetchMeasurements();
@@ -46,27 +93,23 @@ export const MeasurementHistory = () => {
 
   const fetchMeasurements = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error("Authentication token not found");
-      }
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Authentication token not found");
 
-      const response = await fetch('http://localhost:8000/measurements/', {
-        method: 'GET',
+      const response = await fetch("http://localhost:8000/measurements/", {
+        method: "GET",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        }
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch measurements");
-      }
+      if (!response.ok) throw new Error("Failed to fetch measurements");
 
       const data = await response.json();
       setMeasurements(data);
     } catch (error: any) {
-      console.error('Error fetching measurements:', error);
+      console.error("Error fetching measurements:", error);
       toast.error(`Failed to load measurements: ${error.message}`);
     } finally {
       setIsLoading(false);
@@ -74,30 +117,29 @@ export const MeasurementHistory = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("pt-BR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
     });
   };
 
   const getTrend = (current: number | null, previous: number | null) => {
     if (!current || !previous) return null;
-    
     const diff = current - previous;
-    if (Math.abs(diff) < 0.1) return 'stable';
-    return diff > 0 ? 'up' : 'down';
+    if (Math.abs(diff) < 0.1) return "stable";
+    return diff > 0 ? "up" : "down";
   };
 
   const getTrendIcon = (trend: string | null) => {
     switch (trend) {
-      case 'up':
+      case "up":
         return <TrendingUp className="h-4 w-4 text-green-600" />;
-      case 'down':
+      case "down":
         return <TrendingDown className="h-4 w-4 text-red-600" />;
-      case 'stable':
+      case "stable":
         return <Minus className="h-4 w-4 text-gray-600" />;
       default:
         return null;
@@ -105,63 +147,26 @@ export const MeasurementHistory = () => {
   };
 
   const getMeasurementValue = (measurement: BodyMeasurement, key: string): number | null => {
-    const fieldMap: Record<string, keyof BodyMeasurement> = {
-      'height': 'height_cm',
-      'chest': 'chest_cm',
-      'waist': 'waist_cm',
-      'hip': 'hip_cm',
-      'thigh': 'thigh_cm',
-      'bicep': 'bicep_cm',
-      'ankle': 'ankle_cm',
-      'arm-length': 'arm_length_cm',
-      'calf': 'calf_cm',
-      'forearm': 'forearm_cm',
-      'leg-length': 'leg_length_cm',
-      'shoulder-breadth': 'shoulder_breadth_cm',
-      'shoulder-to-crotch': 'shoulder_to_crotch_cm',
-      'wrist': 'wrist_cm'
-    };
-    
-    const field = fieldMap[key];
+    const field = keyToFieldMap[key];
     return field ? measurement[field] as number | null : null;
-  };
-
-  const getMeasurementLabel = (key: string): string => {
-    const labelMap: Record<string, string> = {
-      'height': 'Height',
-      'chest': 'Chest',
-      'waist': 'Waist',
-      'hip': 'Hip',
-      'thigh': 'Thigh',
-      'bicep': 'Bicep',
-      'ankle': 'Ankle',
-      'arm-length': 'Arm Length',
-      'calf': 'Calf',
-      'forearm': 'Forearm',
-      'leg-length': 'Leg Length',
-      'shoulder-breadth': 'Shoulder Width',
-      'shoulder-to-crotch': 'Shoulder to Crotch',
-      'wrist': 'Wrist'
-    };
-    return labelMap[key] || key.charAt(0).toUpperCase() + key.slice(1).replace('-', ' ');
   };
 
   const getMeasurementColor = (index: number): string => {
     const colors = [
-      'bg-blue-50 text-blue-900',
-      'bg-green-50 text-green-900',
-      'bg-purple-50 text-purple-900',
-      'bg-orange-50 text-orange-900',
-      'bg-pink-50 text-pink-900',
-      'bg-indigo-50 text-indigo-900',
-      'bg-teal-50 text-teal-900',
-      'bg-red-50 text-red-900',
-      'bg-yellow-50 text-yellow-900',
-      'bg-cyan-50 text-cyan-900',
-      'bg-emerald-50 text-emerald-900',
-      'bg-violet-50 text-violet-900',
-      'bg-rose-50 text-rose-900',
-      'bg-amber-50 text-amber-900'
+      "bg-blue-50 text-blue-900",
+      "bg-green-50 text-green-900",
+      "bg-purple-50 text-purple-900",
+      "bg-orange-50 text-orange-900",
+      "bg-pink-50 text-pink-900",
+      "bg-indigo-50 text-indigo-900",
+      "bg-teal-50 text-teal-900",
+      "bg-red-50 text-red-900",
+      "bg-yellow-50 text-yellow-900",
+      "bg-cyan-50 text-cyan-900",
+      "bg-emerald-50 text-emerald-900",
+      "bg-violet-50 text-violet-900",
+      "bg-rose-50 text-rose-900",
+      "bg-amber-50 text-amber-900"
     ];
     return colors[index % colors.length];
   };
@@ -218,14 +223,14 @@ export const MeasurementHistory = () => {
             Measurement History ({measurements.length} records)
           </CardTitle>
           <CardDescription>
-            Track your body measurements over time - showing {allowedMeasurements.length} specific measurements
+            Track your body measurements over time - showing {orderedMeasurements.length} specific measurements
           </CardDescription>
         </CardHeader>
       </Card>
 
       {measurements.map((measurement, index) => {
         const previousMeasurement = measurements[index + 1];
-        
+
         return (
           <Card key={measurement.id} className="overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50">
@@ -246,34 +251,23 @@ export const MeasurementHistory = () => {
                 )}
               </div>
             </CardHeader>
-            
+
             <CardContent className="p-6">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {/* Weight (special case) */}
-                {measurement.weight_kg && (
-                  <div className="text-center p-3 bg-green-50 rounded-lg">
-                    <Scale className="h-5 w-5 text-green-600 mx-auto mb-1" />
-                    <p className="text-sm text-gray-600">Weight</p>
-                    <div className="flex items-center justify-center">
-                      <p className="font-semibold text-green-900">{measurement.weight_kg} kg</p>
-                      {getTrendIcon(getTrend(measurement.weight_kg, previousMeasurement?.weight_kg))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Allowed measurements */}
-                {allowedMeasurements.map((measurementKey, measurementIndex) => {
+                {orderedMeasurements.map((measurementKey, i) => {
                   const value = getMeasurementValue(measurement, measurementKey);
                   const previousValue = previousMeasurement ? getMeasurementValue(previousMeasurement, measurementKey) : null;
-                  
                   if (!value) return null;
 
                   return (
-                    <div key={measurementKey} className={`text-center p-3 rounded-lg ${getMeasurementColor(measurementIndex)}`}>
-                      {measurementKey === 'height' && <Ruler className="h-5 w-5 mx-auto mb-1" />}
-                      <p className="text-sm text-gray-600">{getMeasurementLabel(measurementKey)}</p>
+                    <div key={measurementKey} className={`text-center p-3 rounded-lg ${getMeasurementColor(i)}`}>
+                      {measurementKey === "height" && <Ruler className="h-5 w-5 mx-auto mb-1" />}
+                      {measurementKey === "weight" && <Scale className="h-5 w-5 mx-auto mb-1" />}
+                      <p className="text-sm text-gray-600">{labelMap[measurementKey]}</p>
                       <div className="flex items-center justify-center">
-                        <p className="font-semibold">{value} cm</p>
+                        <p className="font-semibold">
+                          {value} {measurementKey === "weight" ? "kg" : "cm"}
+                        </p>
                         {getTrendIcon(getTrend(value, previousValue))}
                       </div>
                     </div>
@@ -287,4 +281,3 @@ export const MeasurementHistory = () => {
     </div>
   );
 };
-

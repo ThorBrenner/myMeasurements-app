@@ -1,21 +1,17 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Ruler } from "lucide-react";
+import { Ruler, Scale } from "lucide-react";
 import { toast } from "sonner";
 
-interface BodyMeasurement {
-  timestamp: string;
-  [key: string]: number | string | null;
-}
-
-const allowedMeasurements = [
+const orderedMeasurements = [
+  "weight",
+  "height",
   "ankle",
   "arm-length",
   "bicep",
   "calf",
   "chest",
   "forearm",
-  "height",
   "hip",
   "leg-length",
   "shoulder-breadth",
@@ -24,6 +20,8 @@ const allowedMeasurements = [
   "waist",
   "wrist"
 ];
+
+const allowedMeasurements = [...orderedMeasurements];
 
 const labelMap: Record<string, string> = {
   height: "Height",
@@ -40,7 +38,26 @@ const labelMap: Record<string, string> = {
   wrist: "Wrist",
   ankle: "Ankle",
   forearm: "Forearm",
-  "shoulder-to-crotch": "Shoulder to Crotch"
+  "shoulder-to-crotch": "Shoulder to Crotch",
+  weight: "Weight"
+};
+
+const keyToFieldMap: Record<string, string> = {
+  height: "height_cm",
+  chest: "chest_cm",
+  waist: "waist_cm",
+  hip: "hip_cm",
+  thigh: "thigh_cm",
+  bicep: "bicep_cm",
+  ankle: "ankle_cm",
+  "arm-length": "arm_length_cm",
+  calf: "calf_cm",
+  forearm: "forearm_cm",
+  "leg-length": "leg_length_cm",
+  "shoulder-breadth": "shoulder_breadth_cm",
+  "shoulder-to-crotch": "shoulder_to_crotch_cm",
+  wrist: "wrist_cm",
+  weight: "weight_kg"
 };
 
 const getMeasurementColor = (index: number): string => {
@@ -68,13 +85,22 @@ export const MeasurementDisplay = ({
 }: {
   measurements?: Record<string, number>;
 }) => {
-  const [measurements, setMeasurements] = useState<Record<string, number> | null>(
-    propMeasurements || null
-  );
+  const [measurements, setMeasurements] = useState<Record<string, number> | null>(null);
   const [isLoading, setIsLoading] = useState(!propMeasurements);
 
   useEffect(() => {
-    if (!propMeasurements) {
+    if (propMeasurements) {
+      const converted = Object.fromEntries(
+        Object.entries(keyToFieldMap).map(([key, field]) => [key, propMeasurements[field]])
+      );
+      const filtered = Object.fromEntries(
+        Object.entries(converted).filter(
+          ([k, v]) => allowedMeasurements.includes(k) && typeof v === "number"
+        )
+      ) as Record<string, number>;
+      setMeasurements(filtered);
+      setIsLoading(false);
+    } else {
       fetchLatestMeasurement();
     }
   }, [propMeasurements]);
@@ -98,8 +124,11 @@ export const MeasurementDisplay = ({
         new Date(a.timestamp) > new Date(b.timestamp) ? a : b
       );
 
+      const converted = Object.fromEntries(
+        Object.entries(keyToFieldMap).map(([key, field]) => [key, latest[field]])
+      );
       const filtered = Object.fromEntries(
-        Object.entries(latest).filter(
+        Object.entries(converted).filter(
           ([k, v]) => allowedMeasurements.includes(k) && typeof v === "number"
         )
       ) as Record<string, number>;
@@ -127,18 +156,23 @@ export const MeasurementDisplay = ({
           </div>
         ) : measurements && Object.keys(measurements).length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {Object.entries(measurements).map(([key, value], index) => (
-              <div
-                key={key}
-                className={`text-center p-3 rounded-lg ${getMeasurementColor(index)}`}
-              >
-                {key === "height" && (
-                  <Ruler className="h-5 w-5 mx-auto mb-1" />
-                )}
-                <p className="text-sm text-gray-600">{labelMap[key] || key}</p>
-                <div className="text-lg font-semibold">{value} cm</div>
-              </div>
-            ))}
+            {orderedMeasurements.map((key, index) => {
+              const value = measurements[key];
+              if (value == null) return null;
+              return (
+                <div
+                  key={key}
+                  className={`text-center p-3 rounded-lg ${getMeasurementColor(index)}`}
+                >
+                  {key === "height" && <Ruler className="h-5 w-5 mx-auto mb-1" />}
+                  {key === "weight" && <Scale className="h-5 w-5 mx-auto mb-1" />}
+                  <p className="text-sm text-gray-600">{labelMap[key] || key}</p>
+                  <div className="text-lg font-semibold">
+                    {value} {key === "weight" ? "kg" : "cm"}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-8">
