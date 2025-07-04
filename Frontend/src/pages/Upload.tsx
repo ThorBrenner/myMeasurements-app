@@ -47,12 +47,12 @@ const Upload = () => {
               <Link to="/history" className="text-gray-700 hover:text-indigo-600 transition-colors">History</Link>
               <Link to="/privacy" className="text-gray-700 hover:text-indigo-600 transition-colors">Privacy</Link>
             </div>
-            <Link to="/">
-              <Button variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Home
-              </Button>
-            </Link>
+            <Link to="/profile">
+                <Button className="bg-indigo-600 hover:bg-indigo-700">
+                  <User className="mr-2 h-4 w-4" />
+                  My Profile
+                </Button>
+              </Link>
           </div>
         </nav>
       </header>
