@@ -1,5 +1,19 @@
 services:
-  body-sim-backend:
+  postgres-db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: my_measurements_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - my-net
+
+  my-measurements-backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -10,6 +24,10 @@ services:
       - ./Backend/models:/app/models
       - ./Backend/uploads:/app/uploads
       - ./Backend/temp:/app/temp
+    environment:
+      DATABASE_URL: postgresql://postgres:123456@postgres-db:5432/my_measurements_db
+    depends_on:
+      - postgres-db
     networks:
       - my-net
     healthcheck:
@@ -26,9 +44,12 @@ services:
       - "80:80"
     restart: unless-stopped
     depends_on:
-      - body-sim-backend
+      - my-measurements-backend
     networks:
       - my-net
+
+volumes:
+  postgres_data:
 
 networks:
   my-net:

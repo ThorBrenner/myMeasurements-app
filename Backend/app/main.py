@@ -29,6 +29,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
+# Register routers
 app.include_router(auth.router)
 app.include_router(measurements.router)
 
@@ -46,13 +47,20 @@ prediction_service = PredictionService()
 image_service = ImageService()
 
 @app.on_event("startup")
-async def startup_event():
-    """Initialize services on startup"""
+async def on_startup():
+    """Inicializa serviços e cria tabelas no banco"""
     try:
         await prediction_service.initialize()
         logger.info("Prediction service initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize prediction service: {e}")
+        raise
+
+    try:
+        Base.metadata.create_all(bind=engine)
+        logger.info("Database tables created successfully")
+    except Exception as e:
+        logger.error(f"Failed to create database tables: {e}")
         raise
 
 @app.get("/")
@@ -186,10 +194,3 @@ if __name__ == "__main__":
         port=8000,
         reload=True
     )
-
-
-
-@app.on_event("startup")
-async def create_db_tables():
-    Base.metadata.create_all(bind=engine)
-

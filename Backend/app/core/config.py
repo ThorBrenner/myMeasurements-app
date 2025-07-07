@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+from typing import Optional, Tuple
 import os
 
 class Settings(BaseSettings):
@@ -14,9 +14,12 @@ class Settings(BaseSettings):
     DEVICE: str = "cuda" if os.system("nvidia-smi") == 0 else "cpu"
     
     # Image Processing Settings
-    IMAGE_SIZE: tuple = (224, 224)
+    IMAGE_SIZE: Tuple[int, int] = (224, 224)
     MAX_IMAGE_SIZE: int = 10 * 1024 * 1024  # 10MB
-    
+
+    # Database
+    DATABASE_URL: str
+
     # Directories
     UPLOAD_DIR: str = "uploads"
     TEMP_DIR: str = "temp"
